@@ -1,0 +1,20 @@
+CC = g++
+CFLAGS = -Wall -O2 -fopenmp -fPIC -Iinclude
+LDFLAGS = -shared
+
+SOURCES = commons/Fingerprint.cpp commons/Score.cpp commons/Functions.cpp commons/Minutia.cpp commons/GrahamScanConvexHull.cpp commons/Munkres.cpp commons/File19794.cpp MatcherJiang/FingerprintJiang.cpp MCC/MCC.cpp MCC/Cylinder.cpp wrapper.cpp
+
+OBJECTS = $(SOURCES:.cpp=.o)
+
+LIB = libafis.so
+
+all: $(LIB)
+
+$(LIB): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+
+.cpp.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(LIB)

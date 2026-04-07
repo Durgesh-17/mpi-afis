@@ -1,0 +1,31 @@
+name: Build Shared Library
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ make libomp-dev
+
+    - name: Build shared library
+      run: make -f Makefile.lib
+
+    - name: List files
+      run: ls -la
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: libafis-so
+        path: libafis.so
