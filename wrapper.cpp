@@ -1,6 +1,7 @@
 #include "MatcherJiang/FingerprintJiang.h"
 #include "MCC/MCC.h"
 #include "include/Matrix.h"
+#include "include/Minutia.h"
 #include <string>
 #include <sstream>
 #include <vector>
@@ -32,6 +33,17 @@ Matrix<int> parse_csv(const std::string& csv) {
     return xyt;
 }
 
+static void fill_fingerprint_from_matrix(Fingerprint &fp, const Matrix<int> &xyt) {
+    std::vector<Minutia> minutiae;
+    minutiae.reserve(xyt.rows());
+
+    for (int i = 0; i < xyt.rows(); ++i) {
+        minutiae.emplace_back(i, xyt[i][0], xyt[i][1], xyt[i][2] * 2, 100, OTH);
+    }
+
+    fp.setMinutiae(minutiae);
+}
+
 // Parse database CSV: assume format id,x,y,theta[,quality]
 std::map<int, std::vector<std::vector<int>>> parse_db_csv(const std::string& csv) {
     std::map<int, std::vector<std::vector<int>>> db;
@@ -58,12 +70,14 @@ extern "C" {
 float match_jiang_csv(const char* csv1, const char* csv2) {
     Matrix<int> xyt1 = parse_csv(std::string(csv1));
     if (xyt1.rows() == 0) return -1.0f;
-    FingerprintJiang fp1(xyt1);
+    FingerprintJiang fp1;
+    fill_fingerprint_from_matrix(fp1, xyt1);
     fp1.initialize();
 
     Matrix<int> xyt2 = parse_csv(std::string(csv2));
     if (xyt2.rows() == 0) return -1.0f;
-    FingerprintJiang fp2(xyt2);
+    FingerprintJiang fp2;
+    fill_fingerprint_from_matrix(fp2, xyt2);
     fp2.initialize();
 
     return fp1.match(fp2);
@@ -72,12 +86,14 @@ float match_jiang_csv(const char* csv1, const char* csv2) {
 float match_mcc_csv(const char* csv1, const char* csv2) {
     Matrix<int> xyt1 = parse_csv(std::string(csv1));
     if (xyt1.rows() == 0) return -1.0f;
-    MCC fp1(xyt1);
+    MCC fp1;
+    fill_fingerprint_from_matrix(fp1, xyt1);
     fp1.initialize();
 
     Matrix<int> xyt2 = parse_csv(std::string(csv2));
     if (xyt2.rows() == 0) return -1.0f;
-    MCC fp2(xyt2);
+    MCC fp2;
+    fill_fingerprint_from_matrix(fp2, xyt2);
     fp2.initialize();
 
     return fp1.match(fp2);
@@ -108,7 +124,8 @@ float search_jiang_db_csv(const char* db_csv, const char* query_csv, int* best_i
     auto db = parse_db_csv(std::string(db_csv));
     Matrix<int> query_xyt = parse_csv(std::string(query_csv));
     if (query_xyt.rows() == 0) return -1.0f;
-    FingerprintJiang query_fp(query_xyt);
+    FingerprintJiang query_fp;
+    fill_fingerprint_from_matrix(query_fp, query_xyt);
     query_fp.initialize();
 
     float best_score = -1.0f;
@@ -123,7 +140,8 @@ float search_jiang_db_csv(const char* db_csv, const char* query_csv, int* best_i
             xyt[i][1] = minutiae[i][1];
             xyt[i][2] = minutiae[i][2];
         }
-        FingerprintJiang fp(xyt);
+        FingerprintJiang fp;
+        fill_fingerprint_from_matrix(fp, xyt);
         fp.initialize();
         float score = fp.match(query_fp);
         if (score > best_score) {
@@ -140,7 +158,8 @@ float search_mcc_db_csv(const char* db_csv, const char* query_csv, int* best_id)
     auto db = parse_db_csv(std::string(db_csv));
     Matrix<int> query_xyt = parse_csv(std::string(query_csv));
     if (query_xyt.rows() == 0) return -1.0f;
-    MCC query_fp(query_xyt);
+    MCC query_fp;
+    fill_fingerprint_from_matrix(query_fp, query_xyt);
     query_fp.initialize();
 
     float best_score = -1.0f;
@@ -155,7 +174,8 @@ float search_mcc_db_csv(const char* db_csv, const char* query_csv, int* best_id)
             xyt[i][1] = minutiae[i][1];
             xyt[i][2] = minutiae[i][2];
         }
-        MCC fp(xyt);
+        MCC fp;
+        fill_fingerprint_from_matrix(fp, xyt);
         fp.initialize();
         float score = fp.match(query_fp);
         if (score > best_score) {
